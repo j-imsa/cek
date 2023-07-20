@@ -35,16 +35,4 @@ public class UserServiceImpl implements UserService {
         return modelMapper.map(savedUser, UserDto.class);
     }
 
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserEntity userEntity = userRepository.findByUsername(username);
-        if (userEntity == null) {
-            throw new UsernameNotFoundException("User did not find!");
-        }
-
-        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority(userEntity.getRole()));
-
-        return new User(userEntity.getUsername(), userEntity.getEncodedPassword(), authorities);
-    }
 }
