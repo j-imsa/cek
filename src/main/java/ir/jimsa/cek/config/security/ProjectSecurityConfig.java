@@ -8,6 +8,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+
+import java.util.Collections;
 
 @Configuration
 public class ProjectSecurityConfig {
@@ -16,6 +19,17 @@ public class ProjectSecurityConfig {
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(conf ->
+                        conf.configurationSource(request -> {
+                            CorsConfiguration corsConfiguration = new CorsConfiguration();
+                            corsConfiguration.setAllowedOrigins(Collections.singletonList("*"));
+                            corsConfiguration.setAllowedMethods(Collections.singletonList("*"));
+                            corsConfiguration.setAllowedHeaders(Collections.singletonList("*"));
+                            corsConfiguration.setAllowCredentials(true);
+                            corsConfiguration.setMaxAge(3600L);
+                            return corsConfiguration;
+                        })
+                )
                 .authorizeHttpRequests(req -> req.anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
         return httpSecurity.build();
