@@ -1,5 +1,8 @@
 package ir.jimsa.cek.config.security;
 
+import ir.jimsa.cek.config.security.filter.CsrfCookieFilter;
+import ir.jimsa.cek.config.security.filter.JWTTokenGeneratorFilter;
+import ir.jimsa.cek.config.security.filter.JWTTokenValidatorFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -14,6 +17,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.Collections;
+import java.util.List;
 
 @Configuration
 public class ProjectSecurityConfig {
@@ -21,16 +25,18 @@ public class ProjectSecurityConfig {
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
         CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler = new CsrfTokenRequestAttributeHandler();
+        csrfTokenRequestAttributeHandler.setCsrfRequestAttributeName("_csrf");
 
         httpSecurity
                 .securityContext(conf -> conf.requireExplicitSave(false))
-                .sessionManagement(conf -> conf.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+                .sessionManagement(conf -> conf.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(conf ->
                         conf.configurationSource(request -> {
                             CorsConfiguration corsConfiguration = new CorsConfiguration();
                             corsConfiguration.setAllowedOrigins(Collections.singletonList("*"));
                             corsConfiguration.setAllowedMethods(Collections.singletonList("*"));
                             corsConfiguration.setAllowedHeaders(Collections.singletonList("*"));
+                            corsConfiguration.setExposedHeaders(List.of("Authorization"));
                             corsConfiguration.setAllowCredentials(true);
                             corsConfiguration.setMaxAge(3600L);
                             return corsConfiguration;
@@ -38,11 +44,15 @@ public class ProjectSecurityConfig {
                 )
                 .csrf(conf ->
                         conf.csrfTokenRequestHandler(csrfTokenRequestAttributeHandler)
-                                .ignoringRequestMatchers("/users")
                                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 )
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
-                .authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
+                .addFilterAfter(new JWTTokenGeneratorFilter(), BasicAuthenticationFilter.class)
+                .addFilterBefore(new JWTTokenValidatorFilter(), BasicAuthenticationFilter.class)
+                .authorizeHttpRequests(
+                        requests -> requests
+                                .requestMatchers("/check").hasRole("ADMIN")
+                )
                 .httpBasic(Customizer.withDefaults());
         return httpSecurity.build();
     }

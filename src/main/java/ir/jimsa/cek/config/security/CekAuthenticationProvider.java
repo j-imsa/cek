@@ -12,7 +12,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,15 +32,6 @@ public class CekAuthenticationProvider implements AuthenticationProvider {
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
-        // ip location check
-        // ...
-        WebAuthenticationDetails details = (WebAuthenticationDetails) authentication.getDetails();
-        String ip1 = details.getRemoteAddress();
-        String ip2 = request.getRemoteAddr();
-
-        // Login from new location
-        // ...
-
         // username and password check
         String username = authentication.getName();
         UserEntity userEntity = userRepository.findByUsername(username);
@@ -55,7 +45,7 @@ public class CekAuthenticationProvider implements AuthenticationProvider {
 
         // Authenticated:
         List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority(userEntity.getRole()));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + userEntity.getRole().toUpperCase()));
         return new UsernamePasswordAuthenticationToken(username, passwordEncoder, authorities);
     }
 
